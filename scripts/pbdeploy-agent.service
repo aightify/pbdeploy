@@ -1,0 +1,17 @@
+[Unit]
+Description=PocketBase Deploy Agent
+After=network.target
+
+[Service]
+
+ExecStart=/usr/local/bin/pbdeploy-agent
+Restart=on-failure
+RestartSec=3
+User=root
+WorkingDirectory=/home/root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+

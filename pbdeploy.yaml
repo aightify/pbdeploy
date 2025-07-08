@@ -1,0 +1,12 @@
+app_name: myapp
+branch: main
+env:
+  DATABASE_URL: sqlite://...
+  PORT: "8080"
+post_deploy: systemctl restart myapp
+repo: git@github.com/user/myapp.git
+server: 192.168.64.2
+ssh_key: ~/.ssh/id_rsa
+webhook:
+  enabled: "true"
+  secret: abcdef123456

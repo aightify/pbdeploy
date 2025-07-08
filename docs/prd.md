@@ -197,10 +197,3 @@ WantedBy=multi-user.target
 
 The updated PRD now supports `sudo`-based, **minimalist installation via systemd**. It is production-ready, simple, and developer-friendly. No additional packages or dependencies required on the server side except standard Ubuntu + systemd.
 
----
-
-Let me know if you’d like:
-
-* A markdown export
-* A `.pdf` version
-* A code scaffold for CLI + agent setup
