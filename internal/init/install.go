@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"log"
+
 	"github.com/spf13/cobra"
 
 	"golang.org/x/crypto/ssh"
@@ -10,10 +12,10 @@ import (
 	"os/exec"
 )
 
-func copyToServer(localFile string, remotePath string) error {
+func copyToServer(localFile string, remotePath string, server string) error {
 
 	remoteUser := "root"
-	remoteHost := "192.168.64.4"
+	remoteHost := server
 
 	// scp command
 	scpCmd := exec.Command("scp", "-i", os.Getenv("HOME")+"/.ssh/id_rsa", localFile, fmt.Sprintf("%s@%s:%s", remoteUser, remoteHost, remotePath))
@@ -34,11 +36,11 @@ func copyToServer(localFile string, remotePath string) error {
 	return nil
 }
 
-func copyAgentToRemote() error {
-	agentFile := "./temp/pbdeploy-agent"
-	agentRemotePath := "/usr/local/bin/pbdeploy-agent"
+func copyAgentToRemote(config DeployConfig) error {
+	agentFile := "./temp/pbdeploy-agent-linux-arm64"
+	agentRemotePath := "/usr/local/bin/pbdeploy-agent-linux-arm64"
 
-	err := copyToServer(agentFile, agentRemotePath)
+	err := copyToServer(agentFile, agentRemotePath, config.Server)
 	if err != nil {
 		fmt.Printf("Failed to copy agent to remote: %v\n", err)
 		return err
@@ -47,11 +49,11 @@ func copyAgentToRemote() error {
 	return nil
 }
 
-func createSystemdService() error {
+func createSystemdService(config DeployConfig) error {
 	serviceFile := "./scripts/pbdeploy-agent.service"
 	serviceRemotePath := "/etc/systemd/system/"
 
-	err := copyToServer(serviceFile, serviceRemotePath)
+	err := copyToServer(serviceFile, serviceRemotePath, config.Server)
 	if err != nil {
 		fmt.Printf("Failed to copy service file to remote: %v\n", err)
 		return err
@@ -60,13 +62,21 @@ func createSystemdService() error {
 	return nil
 }
 
-func enableService() {
+func enableService(yamlConfig DeployConfig) {
+
 	// Config
-	remoteHost := "192.168.64.4:22"
+	remoteHost := yamlConfig.Server + ":22"
 	username := "root"
 	privateKeyPath := os.Getenv("HOME") + "/.ssh/id_rsa"
 	localFile := "scripts/pbdeploy-agent.service"
 	remotePath := "/etc/systemd/system/pbdeploy-agent.service"
+
+	err := copyToServer(localFile, remotePath, yamlConfig.Server)
+
+	if err != nil {
+		log.Fatal("Error copying " + localFile + " to " + yamlConfig.Server + ".")
+	}
+	fmt.Println("✅ Service file uploaded directly to /etc/systemd/system")
 
 	// Load private key
 	key, err := os.ReadFile(privateKeyPath)
@@ -91,35 +101,6 @@ func enableService() {
 	}
 	defer client.Close()
 
-	// Read local service file
-	data, err := os.ReadFile(localFile)
-	if err != nil {
-		panic(fmt.Errorf("failed to read local service file: %w", err))
-	}
-
-	// Start a session to upload
-	session, err := client.NewSession()
-	if err != nil {
-		panic(err)
-	}
-	defer session.Close()
-
-	stdin, err := session.StdinPipe()
-	if err != nil {
-		panic(err)
-	}
-
-	go func() {
-		defer stdin.Close()
-		stdin.Write(data)
-	}()
-
-	if err := session.Run(fmt.Sprintf("tee %s", remotePath)); err != nil {
-		panic(fmt.Errorf("failed to upload file: %w", err))
-	}
-
-	fmt.Println("✅ Service file uploaded directly to /etc/systemd/system")
-
 	// Move file with sudo and reload systemd
 	session2, err := client.NewSession()
 	if err != nil {
@@ -132,13 +113,30 @@ func enableService() {
 		panic(fmt.Errorf("failed to enable/start service: %w", err))
 	}
 
-	fmt.Println("🚀 Service deployed and started successfully.")
+	fmt.Println("🚀 Service enable/started successfully.")
 
 }
 
 func Install(cmd *cobra.Command, args []string) {
-	copyAgentToRemote()
-	createSystemdService()
-	enableService()
+
+	config, err := GetConfig("pbdeploy.yaml")
+
+	if err != nil {
+		log.Fatal("Error loading configuration file " + "pbdeploy.yaml")
+	}
+
+	err = copyAgentToRemote(config)
+	if err != nil {
+		log.Print("Error copy agent to remote")
+		return
+	}
+
+	err = createSystemdService(config)
+	if err != nil {
+		log.Print("Error create systemd service")
+		return
+	}
+
+	enableService(config) // cant given the error handling
 
 }

@@ -15,16 +15,17 @@ func GenerateYml(cmd *cobra.Command, args []string) {
 	}
 
 	config := map[string]interface{}{
-		"server":   "ubuntu@1.2.3.4",
-		"ssh_key":  "~/.ssh/id_rsa",
-		"repo":     "git@github.com/user/myapp.git",
-		"branch":   "main",
-		"app_name": "myapp",
+		"server":       "ubuntu@1.2.3.4",
+		"ssh_key":      "~/.ssh/id_rsa",
+		"repo":         "git@github.com/user/myapp.git",
+		"branch":       "main",
+		"app_name":     "myapp",
+		"app_location": "/home/root/apps/myapp",
 		"env": map[string]string{
 			"PORT":         "8080",
 			"DATABASE_URL": "sqlite://...",
 		},
-		"post_deploy": "systemctl restart myapp",
+		"exec_start": "/usr/local/bin/myapp",
 		"webhook": map[string]string{
 			"enabled": "true",
 			"secret":  "abcdef123456",

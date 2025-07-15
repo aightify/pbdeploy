@@ -30,15 +30,19 @@
     #  insert the public key into the authorized_keys file
     COPY ./containers/id_rsa.pub /root/.ssh/authorized_keys
 
-
     # Expose SSH port
     EXPOSE 22
 
     VOLUME [ "/sys/fs/cgroup" ]
     STOPSIGNAL SIGRTMIN+3
 
+    # Enable sshd service to start on boot
+    RUN systemctl enable ssh
+
+    CMD ["/sbin/init"]
+    
     # Start the SSH service when the container runs
-    CMD ["/usr/sbin/sshd", "-D"]
+    # CMD ["/usr/sbin/sshd", "-D"]
 
 
 

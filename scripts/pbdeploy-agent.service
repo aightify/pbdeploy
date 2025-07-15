@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 
-ExecStart=/usr/local/bin/pbdeploy-agent
+ExecStart=/usr/local/bin/pbdeploy-agent-linux-arm64
 Restart=on-failure
 RestartSec=3
 User=root

@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	internal "github.com/aightify/pbdeploy/internal/init"
 )
 
 var (
@@ -19,9 +21,7 @@ func main() {
 		healthHandler(w, r)
 	})
 
-	router.HandleFunc("/deploy", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("deploy ok"))
-	})
+	router.HandleFunc("/deploy", internal.DeployHandler)
 
 	server := &http.Server{
 		Addr:    ":8080",
@@ -36,14 +36,15 @@ func main() {
 }
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {
+
 	w.Header().Add("Content-Type", "application/json")
-	// w.WriteHeader(http.StatusOK)
-	// w.Write([]byte("healthz successful"))
 	uptime := time.Since(startTime).String()
+
 	healthz := map[string]string{
 		"status":  "ok",
 		"uptime":  uptime,
 		"version": version,
 	}
+
 	json.NewEncoder(w).Encode(healthz)
 }
